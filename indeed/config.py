@@ -1,10 +1,10 @@
-chrome_profile = r'C:\Users\Sushant\AppData\Local\Google\Chrome\User Data\System Profile'
+chrome_profile = r'C:\Users\{username}\AppData\Local\Google\Chrome\User Data\System Profile'
 TABLE_NAME = 'indeed_jobdb'
 """
 scrap_data
 """
 
-keywords = ['CISSP', 'Information Security', 'Network Security', 'cyber']
+keywords = ['software', 'backend', 'python', 'machine learning']
 EMAIL = 'cedaje2538@sportrid.com'
 PASS = '123456@@'
 
