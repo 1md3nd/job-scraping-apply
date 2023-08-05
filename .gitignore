@@ -6,6 +6,10 @@ __pycache__/
 # C extensions
 *.so
 
+# config files
+indeed/config.py
+linkedin/config.py
+
 # Distribution / packaging
 .Python
 build/

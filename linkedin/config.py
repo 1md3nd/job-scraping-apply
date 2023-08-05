@@ -1,6 +1,6 @@
 TABLE_NAME = 'tbl_joblist'
-keywords = ['CISSP', 'Information Security', 'Network Security', 'cyber']
-firefox_profile = r"C:\Users\Sushant\AppData\Roaming\Mozilla\Firefox\Profiles\6d0vlbd8.default-release"
+keywords = ['software', 'backend']
+firefox_profile = r"C:\Users\{username}\AppData\Roaming\Mozilla\Firefox\Profiles\{defaultProfile}"
 # Link_job_apply
 total_jobs = '//small'
 per_job = '//li[@data-occludable-job-id]'
