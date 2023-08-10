@@ -65,6 +65,105 @@ class ApplyBot:
             print(e)
         return
 
+    def find_question_type(self, question):
+        try:
+            content = question.find_element(By.TAG_NAME, config.type_radio)
+            return content, 'radio'
+        except err.NoSuchElementException:
+            try:
+                content = question.find_element(By.TAG_NAME, config.type_input)
+                try:
+                    question.find_element(By.TAG_NAME, config.type_drop_down)
+                    return content, 'drop_down'
+                except err.NoSuchElementException:
+                    return content, 'input'
+            except err.NoSuchElementException:
+                return None
+
+    def find_radio_questions(self, question):
+        try:
+            question_text = question.find_element(By.TAG_NAME, config.radio_ques_text).get_attribute('innerHTML')
+            question_text = clean(question_text)
+            options = question.find_elements(By.TAG_NAME, config.radio_options)
+            options_dic = {}
+            for o_no, option in enumerate(options):
+                option_text = option.get_attribute('innerHTML')
+                options_dic[o_no] = clean(option_text)
+            print('Question: ', question_text)
+            answer = self.cursor.find_question(question_text)
+            print()
+            print('Stored answer: ',answer)
+
+            if not answer:
+                return
+            try:
+                radio_label = question.find_element(By.XPATH, config.select_radio_answer(answer))
+                radio_label.click()
+            except Exception as e:
+                print(e)
+        except:
+            return False
+
+    def find_input_questions(self, question):
+        try:
+
+            question_element = question.find_element(By.TAG_NAME,config.input_ques_text)
+            question_text = question_element.get_attribute('innerHTML')
+            question_text = clean(question_text)
+            # question_id = question_element.get_attribute('for')
+            print(question_text)
+            answer = self.cursor.find_question(question_text)
+            print()
+            print("stored answer",answer)
+
+            if not answer:
+                return
+
+            try:
+                text_area = question.find_element(By.TAG_NAME, config.input_text_area)
+                text_area.click()
+                text_area.send_keys(Keys.CONTROL, 'a')
+                text_area.send_keys(Keys.DELETE)
+                text_area.send_keys(answer)
+            except err.NoSuchElementException:
+                input_area = question.find_element(By.TAG_NAME, config.input_area)
+                input_area.click()
+                input_area.send_keys(Keys.CONTROL, 'a')
+                input_area.send_keys(Keys.DELETE)
+                input_area.send_keys(answer)
+        except:
+            return False
+
+    def find_drop_down_questions(self, question):
+        try:
+            question_element = question.find_element(By.TAG_NAME, config.drop_ques_text)
+            question_text = question_element.get_attribute('innerHTML')
+            question_id = question_element.get_attribute('for')
+            question_text = clean(question_text)
+            options = question.find_elements(By.TAG_NAME, config.drop_options)
+            options_dic = {}
+            for o_no, option in enumerate(options):
+                option_text = option.text
+                options_dic[o_no] = option_text
+            print('Question: ', question_text)
+            answer = self.cursor.find_question(question_text)
+            print()
+            print("stored answer",answer)
+            if not answer:
+                return
+            try:
+                drop_down_element = question.find_element(By.ID, question_id)
+                drop_down_element.click()
+                options = drop_down_element.find_elements(By.TAG_NAME, config.drop_options)
+                for option in options:
+                    if option.text.strip() ==answer:
+                        option.click()
+                        break
+            except Exception as e:
+                print(e)
+        except:
+            return False
+
     def employer_ques(self):
         """
         here there are question asked by the employer and the questions can be anything
@@ -86,8 +185,20 @@ class ApplyBot:
 
             - whee there is an element "<label" it asks a question with "<input" with 'id'
         """
+        try:
+            questions = self.driver.find_elements(By.CLASS_NAME, config.question_tag)
+            for question in questions:
+                content, q_type = self.find_question_type(question)
+                if q_type == 'radio':
+                    self.find_radio_questions(question)
+                if q_type == 'input':
+                    self.find_input_questions(question)
+                if q_type == 'drop_down':
+                    self.find_drop_down_questions(question)
+            return
+        except Exception as e:
+            print(e)
 
-        return
 
     def resume(self):
         # if the resume it already uploaded then it will process the last used resume
@@ -137,8 +248,12 @@ class ApplyBot:
             if self.fix_alert():
                 self.driver.get(link)
             time.sleep(random.randint(4, 8))
-            apply_btn = self.driver.find_element(By.CLASS_NAME, config.apply_btn)
-            apply_btn.click()
+            try:
+                apply_btn = self.driver.find_element(By.CLASS_NAME, config.apply_btn)
+                apply_btn.click()
+            except:
+                print("Job Problem")
+                return
             time.sleep(random.randint(4, 8))
             progress_bar = self.driver.find_element(By.CSS_SELECTOR, config.prog_bar)
             prev_prog = progress_bar.get_attribute(config.prog_att)
