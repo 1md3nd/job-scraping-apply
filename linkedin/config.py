@@ -1,6 +1,29 @@
+
+locations = ['pune','gurgram','noida','banglore','delhi','mumbai']
+
+keywords = ['software development','software engineering','devops','machine learning','data engineer']
+
+#job experience Level - ex:  ["Internship", "Entry level" , "Associate" , "Mid-Senior level" , "Director" , "Executive"]
+experienceLevels = ["Internship", "Entry level"]
+
+#job posted date - ex: ["Any Time", "Past Month" , "Past Week" , "Past 24 hours"] - select only one
+datePosted = ["Past 24 hours"]
+
+#job type - ex:  ["Full-time", "Part-time" , "Contract" , "Temporary", "Volunteer", "Intership", "Other"]
+jobType = ["Full-time",  "Contract"]
+
+#remote  - ex: ["On-site" , "Remote" , "Hybrid"]
+remote = ["On-site" , "Remote" , "Hybrid"]
+
+#salary - ex:["$40,000+", "$60,000+", "$80,000+", "$100,000+", "$120,000+", "$140,000+", "$160,000+", "$180,000+", "$200,000+" ] - select only one
+# salary = [ "$80,000+"]
+
+#sort - ex:["Recent"] or ["Relevent"] - select only one
+sort = ["Recent"]
+
+
 TABLE_NAME = 'tbl_joblist'
-keywords = ['software', 'backend']
-firefox_profile = r"C:\Users\{username}\AppData\Roaming\Mozilla\Firefox\Profiles\{defaultProfile}"
+firefox_profile = r"C:\Users\{username}\AppData\Local\Mozilla\Firefox\Profiles\.default-release"
 # Link_job_apply
 total_jobs = '//small'
 per_job = '//li[@data-occludable-job-id]'
@@ -16,6 +39,9 @@ com_percent = 'html/body/div[3]/div/div/div[2]/div/div/span'
 # apply_process
 choose_btn = "//span[text()='Choose']"
 review_btn = "button[aria-label='Review your application']"
+
+#fill page
+header_cname = '/html/body/div[3]/div/div/div[2]/div/div[2]/form/div/div/h3'
 
 # py
 # get

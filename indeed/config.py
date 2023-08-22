@@ -3,10 +3,11 @@ TABLE_NAME = 'indeed_jobdb'
 """
 scrap_data
 """
+locations = ['pune','gurgram','noida','banglore','delhi','mumbai']
 
-keywords = ['software', 'backend', 'python', 'machine learning']
-EMAIL = 'cedaje2538@sportrid.com'
-PASS = '123456@@'
+keywords = ['software development','software engineering','devops','machine learning','data engineer']
+EMAIL = ''
+PASS = ''
 
 
 job_title = '/html/body/div[1]/div/div[2]/div/div/div/div[2]/div[1]/div[1]/h1/span'
@@ -25,41 +26,7 @@ login_btn = '/html/body/div/div[2]/main/div/div/div[2]/div/form[1]/button'
  scrap_links
 '''
 # url_params
-query_keyword = ['CISSP', 'Information Security', 'Network Security', 'cyber']
-# query_keyword = ['Information Security']
-
-# locations = ['Alberta']
-locations = [
-    "Alberta",
-    "Ontario",
-    "Toronto, ON",
-    "Ottawa, ON",
-    "Vancouver, BC",
-    "Kitchener-Waterloo, ON",
-    "Calgary, AB",
-    "Victoria, BC",
-    "Halifax, NS",
-    "Hamilton, ON",
-    "San Francisco, CA",
-    "Seattle",
-    "Washington",
-    "Austin, TX",
-    "New York",
-    "Atlanta, Georgia",
-    "Denver, CO",
-    "San Jose, CA",
-    "Dallas, Texas",
-    "San Diego, California",
-    "Raleigh, North Carolina",
-    "Houston, TX",
-    "Boulder, Colorado",
-    "Portland, OR",
-    "Charlotte, North Carolina",
-    "Salt Lake City, Utah",
-    "Dallas-Fort Worth Metropolitan Area",
-    "SF Bay Area",
-    "Baltimore, MD",
-    "Minneapolis, Minnesota"]
+query_keyword = ['software development','software engineering','devops','machine learning','data engineer']
 
 sort = 'date'
 fromage = [1, 3, 7, 14]
@@ -71,7 +38,7 @@ email_input = '__email'
 password_input = '__password'
 
 # load_indeed
-start_url = 'https://ca.indeed.com/jobs?'
+start_url = 'https://in.indeed.com/jobs?'
 
 # extract_job_links
 no_job_flag = 'jobsearch-NoResult-messageContainer'
@@ -91,9 +58,9 @@ post_apply_flag = 'ia-PostApply-header'
 post_apply_url = 'https://m5.apply.indeed.com/beta/indeedapply/form/post-apply'
 
 # add_contact
-firstName = 'ajaxx1'
-lastName = 'ajaxx1'
-location_city = 'loca_ajaxx1'
+firstName = 'first name'
+lastName = 'last name'
+location_city = 'location'
 phoneNumber = 9988775544
 contact_values = {
                 'firstName': firstName,

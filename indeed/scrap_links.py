@@ -2,6 +2,7 @@ import datetime
 import itertools
 import re
 import random
+import os
 
 import selenium.common
 from selenium.webdriver.common.by import By
@@ -29,14 +30,16 @@ class ScrapLink:
     def __init__(self):
         # load_dotenv()
 
-        options = uc.ChromeOptions()
+        self.options = uc.ChromeOptions()
         # options.add_argument('--headless')
-        options.add_argument("--start-maximized")
-        options.add_argument("--ignore-certificate-errors")
-        options.add_argument('--no-sandbox')
-        options.add_argument("--disable-extensions")
-        options.add_argument(f"--user-data-dir={config.chrome_profile}")
-        self.driver = uc.Chrome(use_subprocess=True, options=options)
+        self.options.add_argument("--start-maximized")
+        self.options.add_argument("--ignore-certificate-errors")
+        self.options.add_argument('--no-sandbox')
+        self.options.add_argument("--disable-extensions")
+        self.options.add_argument(f"--user-data-dir={config.chrome_profile}")
+
+    def create_drive(self):
+        self.driver = uc.Chrome(use_subprocess=True, options=self.options)
         # self.driver = webdriver.Firefox(options=self.browser_options())
         self.wait = WebDriverWait(self.driver, 15)
 
@@ -73,15 +76,16 @@ class ScrapLink:
 
     def extract_job_links(self):
         # self.login()
+        self.create_drive()
         search_url = []
         for keyword, location, age in itertools.product(config.query_keyword, config.locations, config.fromage):
             url = self.load_indeed(keyword=keyword, location=location, age=age)
             search_url.append(url)
-        print(f'total {len(search_url)} available.')
+        print(f'total {len(search_url)} search available.')
         job_links = set()
         job_ids = set()
         progress_bar = tqdm(search_url, total=len(search_url))
-
+        self.create_drive()
         for cnt, url in enumerate(progress_bar):
             time.sleep(random.randint(4, 7))
             self.driver.get(url)
@@ -116,14 +120,23 @@ class ScrapLink:
         job_links = list(job_links)
         job_ids = list(job_ids)
         print(f'{len(job_links)} jobs found.')
+        self.save_jobs(job_links=job_links)
+        self.driver.quit()
+
+
+    def save_jobs(self,job_links):
         current_date = datetime.date.today()
 
         # Format the current date and month strings
         date_string = current_date.strftime("%Y-%m-%d")
-        with open(f"jobs/links_{date_string}", "w") as file:
+        script_path = os.path.abspath(__file__)
+
+        # Get the directory containing the script
+        script_directory = os.path.dirname(script_path)
+        file_path = os.path.join(script_directory,f"jobs/links_{date_string}")
+        with open(file_path, "w") as file:
             for link in job_links:
                 file.write(link + "\n")
-        self.driver.close()
 
 
 obj = ScrapLink()
