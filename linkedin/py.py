@@ -9,6 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 import config
 
+
 def format_desc(desc):
     """
     Format the raw description text by replacing specific HTML tags with corresponding text formatting.
@@ -50,7 +51,8 @@ def format_desc(desc):
         '<h5>': "\n\n\033[1m",  # Header 5 (end)
         '<h6>': "\n\n\033[1m",  # Header 6 (end)
         '</code>': "\033[0m",  # Code block (end)
-        '<code>': "\033[44m\033[30m",  # Code block (start, blue background and black text)
+        # Code block (start, blue background and black text)
+        '<code>': "\033[44m\033[30m",
     }
     for tag, replacement in replace_dic.items():
         desc = desc.replace(tag, replacement)
@@ -95,14 +97,16 @@ class extractData:
 
     def getinnerHTML(self, xpath):
         try:
-            res = self.driver.find_element(By.XPATH, xpath).get_attribute('innerHTML')
+            res = self.driver.find_element(
+                By.XPATH, xpath).get_attribute('innerHTML')
         except err.NoSuchElementException:
             res = "not found"
         return res
 
     def location(self, path):
         try:
-            res = self.driver.find_element(By.XPATH, path).get_attribute('innerHTML')
+            res = self.driver.find_element(
+                By.XPATH, path).get_attribute('innerHTML')
             html_tag_pattern = r'<[^>]*>'
 
             # Use re.sub() to replace all occurrences of HTML tags and their contents with an empty string
@@ -124,7 +128,8 @@ class extractData:
 
         try:
             self.driver.get(url=input_url)
-            element = self.wait.until(EC.presence_of_element_located((By.XPATH, config.load_flag)))
+            element = self.wait.until(
+                EC.presence_of_element_located((By.XPATH, config.load_flag)))
             element.click()
             job_data['job_link'] = input_url
             job_data['job_title'] = self.getinnerHTML(config.job_title)
@@ -132,12 +137,16 @@ class extractData:
             company_name = job_data['company_name']
             job_data['job_type'] = self.getinnerHTML(config.job_type)
             job_data['location'] = self.location(config.location)
-            job_data['posted_by_name'] = self.getinnerHTML(config.posted_by_name)
-            job_data['posted_by_designation'] = self.getinnerHTML(config.posted_by_desig)
+            job_data['posted_by_name'] = self.getinnerHTML(
+                config.posted_by_name)
+            job_data['posted_by_designation'] = self.getinnerHTML(
+                config.posted_by_desig)
             if job_data['posted_by_name'] == 'not found':
-                job_data['job_description'] = self.getinnerHTML(config.job_desc)
+                job_data['job_description'] = self.getinnerHTML(
+                    config.job_desc)
             else:
-                job_data['job_description'] = self.getinnerHTML(config.job_desc_alt)
+                job_data['job_description'] = self.getinnerHTML(
+                    config.job_desc_alt)
             raw_job_desc = job_data['job_description']
             job_data['posting_time'] = self.getinnerHTML(config.posting_time)
             posting_time = job_data['posting_time']
@@ -155,7 +164,8 @@ class extractData:
             job_data['is_relevant'] = False
             for word in self.keywords:
                 # print(word)
-                find_ele = re.findall(word.lower(), raw_job_desc.lower(), re.IGNORECASE)
+                find_ele = re.findall(
+                    word.lower(), raw_job_desc.lower(), re.IGNORECASE)
                 if len(find_ele) > 0:
                     job_data['is_relevant'] = True
                     temp.append(word)
@@ -167,7 +177,8 @@ class extractData:
             else:
                 job_data['easy_apply'] = False
             try:
-                element = self.wait.until(EC.presence_of_element_located((By.XPATH, config.poster_profile)))
+                element = self.wait.until(EC.presence_of_element_located(
+                    (By.XPATH, config.poster_profile)))
                 element.click()
                 url_flag = self.wait.until(EC.url_contains('/in/'))
                 if url_flag:

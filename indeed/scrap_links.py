@@ -1,46 +1,34 @@
-import datetime
-import itertools
-import re
-import random
 import os
-
-import selenium.common
-from selenium.webdriver.common.by import By
-from tqdm import tqdm
-
-import config
-
+import time
+import random
 import urllib
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import ssl
+from urllib.parse import urlparse, parse_qs
+from datetime import datetime
 
 import undetected_chromedriver as uc
-import time
-from urllib.parse import urlparse, parse_qs
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common import exceptions as err
+from tqdm import tqdm
+import config  # Assuming config.py contains your configuration values
+from colorama import Fore, Style, init
 
+# Initialize colorama
+init(autoreset=True)
 
-def clean(data):
-    data = data.strip()
-    pattern = r'<[^>]*>'
-    cleaned_string = re.sub(pattern, '', data)
-    return cleaned_string
-
-
-class ScrapLink:
+class IndeedJobScraper:
     def __init__(self):
-        # load_dotenv()
-
         self.options = uc.ChromeOptions()
-        # options.add_argument('--headless')
-        self.options.add_argument("--start-maximized")
-        self.options.add_argument("--ignore-certificate-errors")
+        # self.options.add_argument('--headless')
+        # self.options.add_argument("--ignore-certificate-errors")
         self.options.add_argument('--no-sandbox')
         self.options.add_argument("--disable-extensions")
+        self.options.add_argument("--window-size=512,314") 
         self.options.add_argument(f"--user-data-dir={config.chrome_profile}")
-
-    def create_drive(self):
-        self.driver = uc.Chrome(use_subprocess=True, options=self.options)
-        # self.driver = webdriver.Firefox(options=self.browser_options())
+        self.options.add_argument(f'--profile-directory={config.profile}')
+        self.driver = uc.Chrome(browser_executable_path=config.chrome_executable_path, use_subprocess=True,options=self.options)
         self.wait = WebDriverWait(self.driver, 15)
 
     def login(self):
@@ -48,96 +36,104 @@ class ScrapLink:
             self.driver.get(config.signin_page)
             time.sleep(4)
             if self.driver.current_url == config.singin_flag:
-                print('already login..')
+                print(Fore.YELLOW + 'Already logged in.' + Style.RESET_ALL)
                 return
-            # self.driver.get_screenshot_as_file("login.png")
-            email = self.driver.find_element(By.NAME, config.email_input)
-            email.send_keys(config.EMAIL)
-            time.sleep(2)
-            continue_btn = self.driver.find_element(By.XPATH, config.contiune_btn)
-            continue_btn.click()
-            # self.driver.get_screenshot_as_file("login_.png")
+            self.enter_text_and_click(By.NAME, config.email_input, config.EMAIL)
+            self.enter_text_and_click(By.XPATH, config.contiune_btn)
             time.sleep(3)
-            pswd = self.driver.find_element(By.NAME, config.password_input)
-            pswd.send_keys(config.PASS)
-            time.sleep(2)
-            login_btn = self.driver.find_element(By.XPATH, config.login_btn)
-            login_btn.click()
-            # self.driver.get_screenshot_as_file("login__.png")
-            print('login success..')
+            self.enter_text_and_click(By.NAME, config.password_input, config.PASS)
+            self.enter_text_and_click(By.XPATH, config.login_btn)
+            print(Fore.GREEN + 'Logged in successfully.' + Style.RESET_ALL)
         except Exception as e:
-            print(e)
-            print('login failed..')
+            print(Fore.RED + f"Login failed: {e}" + Style.RESET_ALL)
 
-    def load_indeed(self, keyword, sort=config.sort, age=config.fromage, location=''):
-        getVars = {'q': keyword, 'sort': sort, 'fromage': age, 'l': location}
-        url = config.start_url + urllib.parse.urlencode(getVars)
+    def enter_text_and_click(self, by, locator, text=None):
+        element = self.driver.find_element(by, locator)
+        if text:
+            element.send_keys(text)
+        element.click()
+        time.sleep(2)
+
+    def load_search_urls(self):
+        search_urls = []
+        for countries,domain in config.countries_domain.items():
+            for location in config.countries_states[countries]:
+                for keyword in config.query_keywords:
+                        for age in config.fromage:
+                            search_urls.append(
+                                self.load_indeed_url(
+                                keyword=keyword,
+                                start_url=domain,
+                                age=age,
+                                location=location
+                                ))
+        print(Fore.CYAN + f'Total {len(search_urls)} search URLs generated.' + Style.RESET_ALL)
+        
+        return search_urls
+
+    def load_indeed_url(self, keyword,start_url, sort=config.sort, age=1, location=''):
+        get_vars = {'q': keyword, 'sort': sort, 'fromage': age, 'l': location}
+        url = start_url + urllib.parse.urlencode(get_vars)
         return url
 
     def extract_job_links(self):
-        # self.login()
-        self.create_drive()
-        search_url = []
-        for keyword, location, age in itertools.product(config.query_keyword, config.locations, config.fromage):
-            url = self.load_indeed(keyword=keyword, location=location, age=age)
-            search_url.append(url)
-        print(f'total {len(search_url)} search available.')
+        search_urls = self.load_search_urls()
+        print(Fore.CYAN + f'Extracting job links from {len(search_urls)} search URLs.' + Style.RESET_ALL)
+
         job_links = set()
-        job_ids = set()
-        progress_bar = tqdm(search_url, total=len(search_url))
-        self.create_drive()
-        for cnt, url in enumerate(progress_bar):
+        progress_bar = tqdm(search_urls, total=len(search_urls))
+
+        for cnt, url in enumerate(progress_bar, start=1):
             time.sleep(random.randint(4, 7))
             self.driver.get(url)
+            # time.sleep(500)
             try:
-                is_available = self.driver.find_element(By.CLASS_NAME, config.no_job_flag)
-                if is_available:
-                    print(clean(is_available.get_attribute('innerHTML')))
-                    continue
-            except selenium.common.NoSuchElementException:
-                while True:
-                    try:
-                        self.wait.until(EC.presence_of_element_located((By.CLASS_NAME, config.job_list_ele)))
-                        jobs = self.driver.find_elements(By.CLASS_NAME, config.job_list_ele)
-                    except selenium.common.NoSuchElementException or selenium.common.TimeoutException:
-                        self.driver.execute_script("window.stop();")
-                        break
-                    for job in jobs:
-                        link = job.get_attribute('href')
-                        job_links.add(link)
-                        parsed_url = urlparse(link.encode('utf-8'))
-                        query_params = parse_qs(parsed_url.query)
-                        job_id = query_params.get('jk', [None])[0]
-                        job_ids.add(job_id)
-                    try:
-                        time.sleep(random.randint(4, 7))
-                        next_btn = self.driver.find_element(By.XPATH, config.next_page)
-                        next_btn.click()
-                    except selenium.common.NoSuchElementException:
-                        break
+                self.driver.find_element(By.CLASS_NAME, config.no_job_flag)
+                print(Fore.YELLOW + f"No jobs found for URL {url}" + Style.RESET_ALL)
+            except:
+                job_links = self.extract_links_from_page(job_links)
+        
+        print(Fore.GREEN + f'Total {len(job_links)} unique job links found.' + Style.RESET_ALL)
+        self.save_jobs(job_links)
 
-            progress_bar.set_description(f'Processing item {cnt + 1}')
-        job_links = list(job_links)
-        job_ids = list(job_ids)
-        print(f'{len(job_links)} jobs found.')
-        self.save_jobs(job_links=job_links)
-        self.driver.quit()
+    def extract_links_from_page(self, job_links):
+        try:
+            try:
+                self.wait.until(EC.presence_of_element_located((By.CLASS_NAME, config.job_list_ele)))
+                jobs = self.driver.find_elements(By.CLASS_NAME, config.job_list_ele)
+            except (err.NoSuchElementException, err.TimeoutException):
+                self.driver.execute_script("window.stop();")
+                return job_links
+            
+            for job in jobs:
+                link = job.get_attribute('href')
+                job_links.add(link)
+            
+            try:
+                time.sleep(random.randint(4, 7))
+                self.driver.find_element(By.XPATH, config.next_page).click()
+            except (err.NoSuchElementException,err.ElementClickInterceptedException):
+                pass
+        except Exception as e:
+            # return job_links/////////////////////
+            pass
+        return job_links
 
-
-    def save_jobs(self,job_links):
-        current_date = datetime.date.today()
-
-        # Format the current date and month strings
+    def save_jobs(self, job_links):
+        current_date = datetime.now()
         date_string = current_date.strftime("%Y-%m-%d")
-        script_path = os.path.abspath(__file__)
+        script_directory = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(script_directory, f"jobs/links_{date_string}")
 
-        # Get the directory containing the script
-        script_directory = os.path.dirname(script_path)
-        file_path = os.path.join(script_directory,f"jobs/links_{date_string}")
         with open(file_path, "w") as file:
             for link in job_links:
                 file.write(link + "\n")
 
+        print(Fore.GREEN + f'{len(job_links)} job links saved.' + Style.RESET_ALL)
+        self.driver.quit()
 
-obj = ScrapLink()
-obj.extract_job_links()
+if __name__ == "__main__":
+    scraper = IndeedJobScraper()
+    # scraper.login()
+    scraper.extract_job_links()
+

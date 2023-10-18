@@ -29,6 +29,10 @@ class Linkedin:
     def __init__(self):
         load_dotenv()
         self.driver = webdriver.Firefox(options=self.browser_options())
+        window_width = 400
+        window_height = 800
+
+        self.driver.set_window_size(window_width, window_height)
 
     def browser_options(self):
         options = Options()
@@ -49,10 +53,10 @@ class Linkedin:
         countApplied = 0
         countJobs = 0
         cursor = CheckJob()
-        getJobUrlData = cursor.find_non_applied_jobs(table_name=config.TABLE_NAME)
-        lineToWrite = "Total Jobs = " + str(len(getJobUrlData))
+        job_list = cursor.find_non_applied_jobs(table_name=config.TABLE_NAME)
+        lineToWrite = "Total Jobs = " + str(len(job_list))
         displayWriteResults(lineToWrite)
-        for url in getJobUrlData:
+        for url in job_list:
             self.driver.get(url)
             time.sleep(random.uniform(1, constants.botSpeed))
             time.sleep(random.uniform(1, constants.botSpeed))
@@ -65,24 +69,30 @@ class Linkedin:
                 button.click()
                 time.sleep(random.uniform(1, constants.botSpeed))
                 try:
-                    self.driver.find_element(By.CSS_SELECTOR, config.submit_btn).click()
+                    self.driver.find_element(
+                        By.CSS_SELECTOR, config.submit_btn).click()
                     time.sleep(random.uniform(1, constants.botSpeed))
                     apply_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                    cursor.update_job_applied(table_name=config.TABLE_NAME, job_link=url, applied_date=apply_date)
+                    cursor.update_job_applied(
+                        table_name=config.TABLE_NAME, job_link=url, applied_date=apply_date)
                     countApplied += 1
                     lineToWrite = "* 🥳 Just Applied to this job: " + str(url)
                     displayWriteResults(lineToWrite)
 
                 except err.NoSuchElementException:
                     try:
-                        self.driver.find_element(By.CSS_SELECTOR, config.next_btn).click()
+                        self.driver.find_element(
+                            By.CSS_SELECTOR, config.next_btn).click()
                         time.sleep(random.uniform(1, constants.botSpeed))
                         time.sleep(random.uniform(1, constants.botSpeed))
-                        comPercentage = self.driver.find_element(By.XPATH, config.com_percent).text
-                        percenNumber = int(comPercentage[0:comPercentage.index("%")])
+                        comPercentage = self.driver.find_element(
+                            By.XPATH, config.com_percent).text
+                        percenNumber = int(
+                            comPercentage[0:comPercentage.index("%")])
                         result = self.applyProcess(percenNumber, url)
                         if re.search("couldn't apply", result):
-                            cursor.update_job_cant_apply(table_name=config.TABLE_NAME, job_link=url)
+                            cursor.update_job_cant_apply(
+                                table_name=config.TABLE_NAME, job_link=url)
                         else:
                             apply_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                             cursor.update_job_applied(table_name=config.TABLE_NAME, job_link=url,
@@ -92,8 +102,10 @@ class Linkedin:
                         displayWriteResults(lineToWrite)
 
                     except err.NoSuchElementException:
-                        lineToWrite = "* 🥵 Cannot apply to this Job! " + str(url)
-                        cursor.update_job_cant_apply(table_name=config.TABLE_NAME, job_link=url)
+                        lineToWrite = "* 🥵 Cannot apply to this Job! " + \
+                            str(url)
+                        cursor.update_job_cant_apply(
+                            table_name=config.TABLE_NAME, job_link=url)
                         displayWriteResults(lineToWrite)
             else:
                 lineToWrite = "* 🥳 Already applied! Job: " + str(url)
@@ -118,18 +130,22 @@ class Linkedin:
         try:
             for pages in range(applyPages - 2):
                 try:
-                    self.driver.find_element(By.XPATH, config.choose_btn).click()
+                    self.driver.find_element(
+                        By.XPATH, config.choose_btn).click()
                     time.sleep(random.uniform(1, constants.botSpeed))
                 except err.NoSuchElementException:
                     prRed("Can't Fill")
-                self.driver.find_element(By.CSS_SELECTOR, config.next_btn).click()
+                self.driver.find_element(
+                    By.CSS_SELECTOR, config.next_btn).click()
                 time.sleep(random.uniform(1, constants.botSpeed))
                 time.sleep(random.uniform(1, constants.botSpeed))
 
-            self.driver.find_element(By.CSS_SELECTOR, config.review_btn).click()
+            self.driver.find_element(
+                By.CSS_SELECTOR, config.review_btn).click()
             time.sleep(random.uniform(1, constants.botSpeed))
 
-            self.driver.find_element(By.CSS_SELECTOR, config.submit_btn).click()
+            self.driver.find_element(
+                By.CSS_SELECTOR, config.submit_btn).click()
             time.sleep(random.uniform(1, constants.botSpeed))
 
             result = "* 🥳 Just Applied to this job: " + str(offerPage)

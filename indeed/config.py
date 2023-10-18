@@ -84,3 +84,29 @@ experience_page = 'Enter a past job that shows relevant experience'
 em_question_page = 'Questions from the employer'
 resume_page = 'Add a resume for the employer'
 contact_page = 'Add your contact information'
+
+# find_question_type
+type_radio = 'fieldset'
+type_input = 'label'
+type_drop_down = 'select'
+
+# find_radio_question
+radio_ques_text = 'legend'
+radio_options = 'label'
+select_radio_answer = lambda answer: f"//label[contains(.,'{answer}')]"
+
+# find_input_question
+input_ques_text = 'label'
+input_text_area = 'textarea'
+input_area = 'input'
+
+# find_radio_question
+drop_ques_text = 'label'
+drop_options = 'option'
+
+# employe_ques
+question_tag = 'ia-Questions-item'
+
+
+#resume
+resume_selector = '[data-testid="resumeFileInfoCard"]'

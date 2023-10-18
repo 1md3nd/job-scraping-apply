@@ -43,19 +43,20 @@ class Linkedin:
         options.add_argument(firefoxProfileRootDir)
 
         return options
-    
+
     def contact_info(self):
-        return 
-    
+        return
+
     def resume_page(self):
         return
-    
+
     def additional_ques(self):
         return
-    
+
     def fill_page(self):
         try:
-            header = self.driver.find_element(By.XPATH, config.header_cname).get_attribute('innerHTML').text
+            header = self.driver.find_element(
+                By.XPATH, config.header_cname).get_attribute('innerHTML').text
             match clean(header):
                 case config.contact_info:
                     return self.contact_info()
@@ -75,14 +76,14 @@ class Linkedin:
 
     def hit_btn(self):
         try:
-            bttn = self.driver.find_element(By.XPATH,config.next_btn)
+            bttn = self.driver.find_element(By.XPATH, config.next_btn)
         except err.NoSuchAttributeException:
             try:
-                bttn = self.driver.find_element(By.XPATH,config.review_btn)
+                bttn = self.driver.find_element(By.XPATH, config.review_btn)
             except err.NoSuchAttributeException:
                 return False
         bttn.click()
-        return True               
+        return True
 
     def apply_until_done(self,):
         progress_bar = self.driver.find_element(By.XPATH, config.com_percent)
@@ -92,14 +93,17 @@ class Linkedin:
             if not self.hit_btn():
                 return False
             time.sleep(random.randint(4, 8))
-            progress_bar = self.driver.find_element(By.XPATH, config.com_percent)
+            progress_bar = self.driver.find_element(
+                By.XPATH, config.com_percent)
             curr_prog = progress_bar.get_attribute('innerHTML').text
             while curr_prog == prev_prog:
-                utils.prGreen('Manual Input Require!! \n Press Enter Onto Done..')
+                utils.prGreen(
+                    'Manual Input Require!! \n Press Enter Onto Done..')
                 input()
                 self.hit_btn()
                 time.sleep(random.randint(3, 5))
-                progress_bar = self.driver.find_element(By.XPATH, config.com_percent)
+                progress_bar = self.driver.find_element(
+                    By.XPATH, config.com_percent)
                 curr_prog = progress_bar.get_attribute('innerHTML').text
 
             prev_prog = curr_prog
@@ -107,9 +111,8 @@ class Linkedin:
         submit_bttn.click()
         return True
 
-
     def manual_jobs_apply(self):
-        
+
         cursor = CheckJob()
         job_list = cursor.find_manual_jobs(table_name=config.TABLE_NAME)
         lineToWrite = "Total Manual Jobs = " + str(len(job_list))
@@ -126,9 +129,8 @@ class Linkedin:
             if self.apply_until_done():
                 apply_date = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 cursor.update_job_applied(table_name=config.TABLE_NAME, job_link=url,
-                                            applied_date=apply_date)
+                                          applied_date=apply_date)
 
-                
         self.driver.close()
         cursor.cursor.close()
         cursor.connection.close()
@@ -141,7 +143,6 @@ class Linkedin:
             EasyApplyButton = False
         return EasyApplyButton
 
-    
 
 start = time.time()
 Linkedin().manual_jobs_apply()

@@ -1,22 +1,24 @@
-import datetime
-import re
+import os
+import time
 import random
-
-import mysql.connector.errors
-import selenium.common as err
-from selenium.webdriver.common.by import By
-from tqdm import tqdm
-
-import config
-
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+import re
+import mysql
+from datetime import datetime
 
 import undetected_chromedriver as uc
-import time
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common import exceptions as err
+from tqdm import tqdm
+from colorama import Fore, Style, init
 
+import config
 from database.check import CheckJob
-from linkedin import utils
+import utils
+
+# Initialize colorama
+init(autoreset=True)
 
 
 def clean(data):
@@ -28,94 +30,97 @@ def clean(data):
 
 class ExtractBot:
     def __init__(self):
-        # load_dotenv()
-
-        options = uc.ChromeOptions()
-        # options.add_argument('--headless')
-        options.add_argument("--start-maximized")
-        options.add_argument("--ignore-certificate-errors")
-        options.add_argument('--no-sandbox')
-        options.add_argument("--disable-extensions")
-        options.add_argument(f"--user-data-dir={config.chrome_profile}")
-        self.driver = uc.Chrome(use_subprocess=True, options=options)
-        # self.driver = webdriver.Firefox(options=self.browser_options())
-        self.wait = WebDriverWait(self.driver, 15)
         try:
             self.insert = CheckJob()
-        except mysql.connector.errors.DatabaseError:
-            utils.prRed('The database is not connected and it will create further issue \n'
-                        'Make sure to turn on the server before executing this file..')
-            exit()
-
-    def getinnerHTML(self, xpath):
-        try:
-            res = self.driver.find_element(By.XPATH, xpath).get_attribute('innerHTML')
-            res = clean(res)
         except:
-            # print(e)
-            res = "not found"
-        # print(res)
-        return res
+            print(Fore.RED+'The database is not connected and it will create further issues.\n'
+                  'Make sure to turn on the server before executing this file..' + Style.RESET_ALL)
+            exit()
+        self.options = uc.ChromeOptions()
+        # self.options.add_argument('--headless')
+        self.options.add_argument("--ignore-certificate-errors")
+        self.options.add_argument('--no-sandbox')
+        self.options.add_argument("--disable-extensions")
+        self.options.add_argument("--window-size=512,314")
+        self.options.add_argument(f"--user-data-dir={config.chrome_profile}")
+        self.options.add_argument(f'--profile-directory={config.profile}')
+        self.driver = uc.Chrome(
+            browser_executable_path=config.chrome_executable_path, use_subprocess=True, options=self.options)
+        self.wait = WebDriverWait(self.driver, 15)
+
+    def get_element_text(self, by, key):
+        try:
+            element = self.driver.find_element(by, key)
+            return clean(element.get_attribute('innerHTML'))
+        except err.NoSuchElementException:
+            return "not found"
 
     def find_desc(self, link):
         data = {}
         self.driver.get(link)
         data['job_link'] = link
         try:
-            self.wait.until(EC.presence_of_element_located((By.ID, config.job_desc)))
-            data['job_title'] = self.getinnerHTML(config.job_title)
-            data['company_name'] = self.getinnerHTML(config.company_name)
-            data['location'] = self.getinnerHTML(config.location_)
-            desc = self.driver.find_element(By.ID, config.job_desc).get_attribute('innerHTML')
-            data['job_description'] = clean(desc)
-            raw_job_desc = data['job_description']
-
-            data['job_type'] = self.getinnerHTML(config.job_type)
-            try:
-                apply_btn = clean(self.driver.find_element(By.CLASS_NAME, config.apply_btn).get_attribute('innerHTML'))
-            except err.NoSuchElementException:
-                try:
-                    apply_btn = clean(self.driver.find_element(By.ID, config.apply_btn_).get_attribute('innerHTML'))
-                except err.NoSuchElementException:
-                    apply_btn = ''
-            if apply_btn == 'Apply now':
-                data['easy_apply'] = True
-            else:
-                data['easy_apply'] = False
+            self.wait.until(EC.presence_of_element_located(
+                (By.ID, config.job_desc)))
+            data['job_title'] = self.get_element_text(
+                By.XPATH, config.job_title)
+            data['company_name'] = self.get_element_text(
+                By.XPATH, config.company_name)
+            data['location'] = self.get_element_text(By.ID, config.location_)
+            data['job_description'] = self.get_element_text(
+                By.ID, config.job_desc)
+            data['job_type'] = self.get_element_text(By.ID, config.job_type)
+            complete_job = self.get_element_text(
+                By.CLASS_NAME, config.job_component)
+            temp = set()
+            data['type_'] = ''
+            for id, keyword in enumerate(config.job_type_keyowrds):
+                for key in keyword:
+                    if re.search(key.lower(), complete_job.lower(), re.IGNORECASE):
+                        temp.add(config.job_type_labels[id])
+                        break
+            data['type_'] = ', '.join(temp)
+            apply_btn = self.get_element_text(By.CLASS_NAME, config.apply_btn)
+            data['easy_apply'] = (apply_btn == 'Apply now')
             temp = []
             data['is_relevant'] = False
             for word in config.keywords:
-                find_ele = re.findall(word.lower(), raw_job_desc.lower(), re.IGNORECASE)
-                if len(find_ele) > 0:
+                if re.search(word.lower(), data['job_description'].lower(), re.IGNORECASE):
                     data['is_relevant'] = True
                     temp.append(word)
-            data['keywords'] = ' '.join(temp)
+            data['keywords'] = ', '.join(temp)
+        except err.TimeoutException:
+            print(
+                f'{Fore.RED}Timeout exception occurred while processing job link: {link}{Style.RESET_ALL}')
+            return False
         except:
-            return 'something went wrong'
+            print(
+                f'{Fore.RED}Something went wrong while processing job link: {link}{Style.RESET_ALL}')
+            return False
         return data
 
     def extract_desc(self):
-        current_date = datetime.date.today()
-
-        # Format the current date and month strings
+        current_date = datetime.now()
         date_string = current_date.strftime("%Y-%m-%d")
-        with open(f"jobs/links_{date_string}", "r") as file:
-            # Read the lines of the file
-            lines = file.readlines()
+        script_directory = os.path.dirname(os.path.abspath(__file__))
+        file_path = os.path.join(script_directory, f"jobs/links_{date_string}")
 
-        # Extract the links from the lines
-        links = [line.strip() for line in lines]
+        with open(file_path, "r") as file:
+            links = [line.strip() for line in file.readlines()]
+
         progress_link = tqdm(links, total=len(links))
-        for count, link in enumerate(progress_link):
+        for count, link in enumerate(progress_link, start=1):
             time.sleep(random.randint(4, 8))
             data = self.find_desc(link)
-            if data == 'something went wrong':
-                self.driver.get_screenshot_as_file(f'problem{count + 1}.png')
-                continue
-            else:
+            if data:
                 self.insert.insert_indeed_job(data)
-            progress_link.set_description(f'Processing item {count + 1}')
-        self.driver.close()
+                print(
+                    f'{Fore.GREEN}Job data inserted for link {link}{Style.RESET_ALL}')
+            progress_link.set_description(
+                f'{Fore.CYAN}Processing item {count}{Style.RESET_ALL}')
+
+        self.driver.quit()
 
 
-ExtractBot().extract_desc()
+if __name__ == "__main__":
+    ExtractBot().extract_desc()
